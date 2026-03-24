@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeartFApi - REST API Dashboard</title>
+  <meta name="description" content="Simple REST API for YouTube & TikTok Search + Downloader">
+  <link rel="icon" type="image/svg+xml" href="image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  
+  <style>
+    /* ===== RESET & BASE ===== */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    :root {
+      --primary: #2563eb; --primary-dark: #1d4ed8; --primary-light: #3b82f6;
+      --success: #16a34a; --success-light: #22c55e;
+      --danger: #dc2626; --danger-light: #ef4444;
+      --warning: #ca8a04; --warning-light: #eab308;
+      --bg: #ffffff; --bg-secondary: #f8fafc; --bg-tertiary: #f1f5f9;
+      --border: #e2e8f0; --text: #1e293b; --text-muted: #64748b;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      --radius: 12px; --radius-sm: 8px;
+    }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    
+    /* ===== HEADER ===== */
+    header { display: flex; justify-content: space-between; align-items: center; padding: 25px 0; border-bottom: 2px solid var(--border); margin-bottom: 30px; flex-wrap: wrap; gap: 15px; }
+    .logo { display: flex; align-items: center; gap: 12px; font-size: 28px; font-weight: 800; color: var(--primary); text-decoration: none; }
+    .logo-icon { font-size: 36px; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    .logo-text { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    /* ===== STATUS BADGE ===== */
+    .status-badge { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 50px; font-size: 14px; font-weight: 600; transition: all 0.3s ease; }
+    .status-badge.online { background: linear-gradient(135deg, #dcfce7, #86efac); color: #166534; box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+    .status-badge.offline { background: linear-gradient(135deg, #fee2e2, #fca5a5); color: #991b1b; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; animation: blink 1.5s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+    
+    /* ===== STATS GRID ===== */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 35px; }
+    .stat-card { background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary)); border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; text-align: center; transition: all 0.3s ease; position: relative; overflow: hidden; }
+    .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: var(--primary-light); }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .stat-icon { font-size: 32px; margin-bottom: 10px; }
+    .stat-value { font-size: 36px; font-weight: 800; color: var(--text); margin: 8px 0; }
+    .stat-label { font-size: 14px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card.success .stat-value { color: var(--success); }
+    .stat-card.danger .stat-value { color: var(--danger); }    .stat-card.primary .stat-value { color: var(--primary); }
+    
+    /* ===== ENDPOINTS SECTION ===== */
+    .section { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 25px; margin-bottom: 25px; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .section-title { font-size: 20px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 10px; }
+    .section-icon { font-size: 24px; }
+    
+    /* ===== ENDPOINT LIST ===== */
+    .endpoint-list { display: grid; gap: 12px; }
+    .endpoint-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border); transition: all 0.3s ease; cursor: pointer; }
+    .endpoint-item:hover { border-color: var(--primary-light); box-shadow: var(--shadow); transform: translateX(5px); }
+    .endpoint-path { font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; color: var(--text); font-weight: 500; }
+    .endpoint-path span { color: var(--primary); }
+    .endpoint-badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+    .badge-search { background: linear-gradient(135deg, #dbeafe, #3b82f6); color: #1e40af; }
+    .badge-download { background: linear-gradient(135deg, #dcfce7, #22c55e); color: #166534; }
+    .badge-api { background: linear-gradient(135deg, #fef3c7, #f59e0b); color: #92400e; }
+    
+    /* ===== TEST FORM ===== */
+    .test-form { display: grid; gap: 15px; margin-top: 20px; }
+    .form-group { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-input { flex: 1; min-width: 200px; padding: 12px 16px; border: 2px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; transition: all 0.3s ease; }
+    .form-input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .btn { padding: 12px 24px; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4); }
+    .btn-secondary { background: var(--bg-tertiary); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: var(--border); }
+    
+    /* ===== RESPONSE BOX ===== */
+    .response-box { background: #1e293b; border-radius: var(--radius-sm); padding: 20px; margin-top: 20px; overflow-x: auto; max-height: 400px; overflow-y: auto; }
+    .response-box pre { margin: 0; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #e2e8f0; white-space: pre-wrap; word-wrap: break-word; }
+    .response-box .key { color: #7dd3fc; }
+    .response-box .string { color: #86efac; }
+    .response-box .number { color: #fca5a5; }
+    .response-box .boolean { color: #fcd34d; }
+    
+    /* ===== FOOTER ===== */
+    .footer { margin-top: 40px; text-align: center; padding: 25px 0; border-top: 1px solid var(--border); }
+    .footer-text { font-size: 14px; color: var(--text-muted); margin-bottom: 10px; }
+    .footer-links { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; }
+    .footer-link { color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 500; transition: color 0.3s ease; }
+    .footer-link:hover { color: var(--primary-dark); text-decoration: underline; }
+    .code-example { background: var(--bg-tertiary); padding: 15px 20px; border-radius: var(--radius-sm); font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: var(--text); margin-top: 15px; text-align: left; display: inline-block; }
+    
+    /* ===== LOADING ===== */
+    .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+        /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      header { flex-direction: column; text-align: center; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .endpoint-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .form-group { flex-direction: column; }
+      .form-input { width: 100%; }
+      .btn { width: 100%; justify-content: center; }
+    }
+    
+    /* ===== ANIMATIONS ===== */
+    .fade-in { animation: fadeIn 0.5s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <header>
+      <a href="/" class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">DeartFApi</span>
+      </a>
+      <div id="statusBadge" class="status-badge offline">
+        <span class="status-dot"></span>
+        <span id="statusText">Checking...</span>
+      </div>
+    </header>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card primary fade-in" style="animation-delay: 0.1s">
+        <div class="stat-icon">📊</div>
+        <div class="stat-value" id="totalReq">-</div>
+        <div class="stat-label">Total Requests</div>
+      </div>
+      <div class="stat-card success fade-in" style="animation-delay: 0.2s">
+        <div class="stat-icon">✅</div>
+        <div class="stat-value" id="success">-</div>
+        <div class="stat-label">Berhasil</div>
+      </div>
+      <div class="stat-card danger fade-in" style="animation-delay: 0.3s">
+        <div class="stat-icon">❌</div>
+        <div class="stat-value" id="failed">-</div>
+        <div class="stat-label">Gagal</div>
+      </div>
+      <div class="stat-card fade-in" style="animation-delay: 0.4s">
+        <div class="stat-icon">🔌</div>
+        <div class="stat-value" id="endpoints">4</div>
+        <div class="stat-label">Total API</div>      </div>
+    </div>
+
+    <!-- SEARCH ENDPOINTS -->
+    <div class="section fade-in" style="animation-delay: 0.5s">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🔍</span>
+          Search API
+        </div>
+        <span class="endpoint-badge badge-search">2 Endpoints</span>
+      </div>
+      <div class="endpoint-list">
+        <div class="endpoint-item" onclick="fillTest('search/ytsearch.json', 'q', 'lagu indonesia viral')">
+          <div class="endpoint-path"><span>/search/ytsearch.json</span>?q=...</div>
+          <span class="endpoint-badge badge-search">YouTube Search</span>
+        </div>
+        <div class="endpoint-item" onclick="fillTest('search/ttsearch.json', 'q', 'tutorial masak')">
+          <div class="endpoint-path"><span>/search/ttsearch.json</span>?q=...</div>
+          <span class="endpoint-badge badge-search">TikTok Search</span>
+        </div>
+      </div>
+      <div class="test-form" id="testFormSearch">
+        <div class="form-group">
+          <input type="text" class="form-input" id="testEndpointSearch" placeholder="/search/ytsearch.json" value="/search/ytsearch.json">
+          <input type="text" class="form-input" id="testParamSearch" placeholder="Parameter (e.g., q=lagu)" value="q=lagu indonesia">
+          <button class="btn btn-primary" onclick="testAPI('search')">
+            <span>🧪</span> Test API
+          </button>
+        </div>
+        <div class="response-box" id="responseSearch" style="display:none">
+          <pre id="responseTextSearch"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOWNLOADER ENDPOINTS -->
+    <div class="section fade-in" style="animation-delay: 0.6s">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">⬇️</span>
+          Downloader API
+        </div>
+        <span class="endpoint-badge badge-download">2 Endpoints</span>
+      </div>
+      <div class="endpoint-list">
+        <div class="endpoint-item" onclick="fillTest('downloader/ytdown.json', 'url', 'https://youtube.com/watch?v=dQw4w9WgXcQ')">
+          <div class="endpoint-path"><span>/downloader/ytdown.json</span>?url=...</div>
+          <span class="endpoint-badge badge-download">YouTube DL</span>
+        </div>        <div class="endpoint-item" onclick="fillTest('downloader/ttdown.json', 'url', 'https://tiktok.com/@user/video/123')">
+          <div class="endpoint-path"><span>/downloader/ttdown.json</span>?url=...</div>
+          <span class="endpoint-badge badge-download">TikTok DL</span>
+        </div>
+      </div>
+      <div class="test-form" id="testFormDown">
+        <div class="form-group">
+          <input type="text" class="form-input" id="testEndpointDown" placeholder="/downloader/ytdown.json" value="/downloader/ytdown.json">
+          <input type="text" class="form-input" id="testParamDown" placeholder="Parameter (e.g., url=...)" value="url=https://youtube.com/watch?v=xxx">
+          <button class="btn btn-primary" onclick="testAPI('down')">
+            <span>🧪</span> Test API
+          </button>
+        </div>
+        <div class="response-box" id="responseDown" style="display:none">
+          <pre id="responseTextDown"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- API INFO -->
+    <div class="section fade-in" style="animation-delay: 0.7s">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">📚</span>
+          API Information
+        </div>
+        <span class="endpoint-badge badge-api">v1.2.0</span>
+      </div>
+      <div style="display: grid; gap: 15px; font-size: 14px; color: var(--text-muted)">
+        <div><strong>🏷️ Base URL:</strong> <code style="background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;" id="baseUrl">-</code></div>
+        <div><strong>⏱️ Uptime:</strong> <span id="uptime">-</span></div>
+        <div><strong>🔐 Creator:</strong> DeartF</div>
+        <div><strong>📦 Response Format:</strong> JSON</div>
+      </div>
+      <div class="code-example">
+        <strong>Example Usage:</strong><br><br>
+        🔍 Search: <code>GET /search/ytsearch.json?q=your+query</code><br>
+        ⬇️ Download: <code>GET /downloader/ttdown.json?url=VIDEO_URL</code><br>
+        📊 Stats: <code>GET /api/stats</code><br>
+        📚 Docs: <code>GET /api/docs</code>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer fade-in" style="animation-delay: 0.8s">
+      <p class="footer-text">© 2026 DeartFApi • Real Search & Downloader REST API</p>
+      <p class="footer-text">Ready for your private bot 🔐 • Built with ❤️</p>
+      <div class="footer-links">
+        <a href="/api/docs" class="footer-link">📚 API Docs</a>
+        <a href="/api/stats" class="footer-link">📊 Live Stats</a>        <a href="/ping" class="footer-link">💓 Health Check</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== CONFIG =====
+    const API_BASE = window.location.origin;
+    let isOnline = false;
+    let autoRefresh = null;
+
+    // ===== LOAD STATS =====
+    async function loadStats() {
+      try {
+        const res = await fetch('/api/stats', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Failed');
+        
+        const data = await res.json();
+        
+        // Update stats
+        document.getElementById('totalReq').textContent = formatNumber(data.totalRequests);
+        document.getElementById('success').textContent = formatNumber(data.success);
+        document.getElementById('failed').textContent = formatNumber(data.failed);
+        document.getElementById('endpoints').textContent = data.endpoints || 4;
+        document.getElementById('uptime').textContent = formatUptime(data.uptime);
+        document.getElementById('baseUrl').textContent = API_BASE;
+        
+        // Update status
+        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        
+        if (data.status === 'online') {
+          statusBadge.className = 'status-badge online';
+          statusText.textContent = 'Online 🟢';
+          isOnline = true;
+        } else {
+          statusBadge.className = 'status-badge offline';
+          statusText.textContent = 'Offline 🔴';
+          isOnline = false;
+        }
+        
+      } catch (e) {
+        document.getElementById('statusBadge').className = 'status-badge offline';
+        document.getElementById('statusText').textContent = 'Offline 🔴';
+        isOnline = false;
+      }
+    }
+
+    // ===== FILL TEST FORM =====
+    function fillTest(endpoint, param, value) {      const isSearch = endpoint.includes('search');
+      document.getElementById(`testEndpoint${isSearch ? 'Search' : 'Down'}`).value = `/${endpoint}`;
+      document.getElementById(`testParam${isSearch ? 'Search' : 'Down'}`).value = `${param}=${encodeURIComponent(value)}`;
+      window.scrollTo({ top: document.getElementById(`testForm${isSearch ? 'Search' : 'Down'}`).offsetTop - 100, behavior: 'smooth' });
+    }
+
+    // ===== TEST API =====
+    async function testAPI(type) {
+      const endpoint = document.getElementById(`testEndpoint${type === 'search' ? 'Search' : 'Down'}`).value.replace(/^\//, '');
+      const param = document.getElementById(`testParam${type === 'search' ? 'Search' : 'Down'}`).value;
+      const responseBox = document.getElementById(`response${type === 'search' ? 'Search' : 'Down'}`);
+      const responseText = document.getElementById(`responseText${type === 'search' ? 'Search' : 'Down'}`);
+      
+      responseBox.style.display = 'block';
+      responseText.innerHTML = '<span class="loading"></span> Loading...';
+      
+      try {
+        const url = `/${endpoint}?${param}`;
+        const start = performance.now();
+        const res = await fetch(url);
+        const duration = ((performance.now() - start) / 1000).toFixed(2);
+        const data = await res.json();
+        
+        responseText.innerHTML = syntaxHighlight(data, duration, res.status);
+        responseBox.scrollTop = 0;
+        
+      } catch (e) {
+        responseText.innerHTML = `<span style="color: #fca5a5">Error: ${e.message}</span>`;
+      }
+    }
+
+    // ===== SYNTAX HIGHLIGHT =====
+    function syntaxHighlight(json, duration, status) {
+      const jsonStr = JSON.stringify(json, null, 2);
+      let highlighted = jsonStr.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, (match) => {
+        let cls = 'number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+          } else {
+            cls = 'string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'boolean';
+        } else if (/null/.test(match)) {
+          cls = 'boolean';
+        }
+        return `<span class="${cls}">${match}</span>`;
+      });
+            return `<div style="color: #94a3b8; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 8px;">
+        Status: <span style="color: ${status === 200 ? '#86efac' : '#fca5a5'}">${status}</span> • 
+        Time: <span style="color: #7dd3fc">${duration}s</span> • 
+        URL: <span style="color: #fcd34d">${window.location.origin}</span>
+      </div>${highlighted}`;
+    }
+
+    // ===== FORMAT HELPERS =====
+    function formatNumber(num) {
+      if (!num) return '0';
+      return num.toLocaleString('id-ID');
+    }
+
+    function formatUptime(seconds) {
+      if (!seconds) return '-';
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return `${h}h ${m}m ${s}s`;
+    }
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      autoRefresh = setInterval(loadStats, 30000); // Auto refresh setiap 30 detik
+    });
+
+    // ===== CLEANUP =====
+    window.addEventListener('beforeunload', () => {
+      if (autoRefresh) clearInterval(autoRefresh);
+    });
+  </script>
+</body>
+</html>
